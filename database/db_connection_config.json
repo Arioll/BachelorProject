@@ -1,0 +1,7 @@
+{
+    "dbname": "thesis_db",
+    "host": "localhost",
+    "port": 3306,
+    "user": "thesis_user",
+    "password": "1234554321"
+}
