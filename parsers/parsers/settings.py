@@ -81,6 +81,8 @@ KEYSUBWORDS_FILTER = ['газ', 'нефт', 'хим', 'ойл', 'аксиома-
                       'газмашпроект', 'геотек', 'интегр', 'некко', 
                       'новомет', 'норт', 'бур', 'онк', 'петро', 'ритек']
 
+CACHE_SIZE = 100
+
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
 #AUTOTHROTTLE_ENABLED = True

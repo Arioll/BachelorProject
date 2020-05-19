@@ -1,4 +1,6 @@
 import peewee
+import pandas as pd
+import string
 import json
 import os
 
@@ -21,11 +23,11 @@ db.connect()
 
 class JSONField(peewee.TextField):
     def db_value(self, value):
-        return json.dumps(value)
+        return str(value)
 
     def python_value(self, value):
         if value is not None:
-            return json.loads(value)
+            return eval(value)
 
 class Article(Model):
 
@@ -99,3 +101,20 @@ class ConnectionProvider:
             lines.append(sep.join([str(i) for i in art_arr]))
         with open(path, 'w') as file:
             file.write('\n'.join(lines))
+
+    def load_csv_into_db(self, path, sep=';'):
+
+        Article.drop_table()
+        Article.create_table()
+
+        frame = pd.read_csv(path, sep)
+        for i, row in frame.iterrows():
+            d = dict(row)
+            d['global_id'] = int(d['global_id'])
+            new_ent = set()
+            for ent in eval(d['named_entities']):
+                if ent not in string.punctuation:
+                    new_ent.add(ent)
+            #print(d['named_entities'])
+            d['named_entities'] = list(new_ent)
+            Article.insert(d).execute()

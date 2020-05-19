@@ -83,8 +83,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     from database.connection_provider import ConnectionProvider
 
-    provider = ConnectionProvider()
-    provider.build_csv('parsed_articles.csv', '|')
+    
     #for art in provider.get_all_articles():
     #    print(art.title)
     #provider.add_article(100, "title", "descr", "link", "provider_name", "1998-11-03 22:22:22")

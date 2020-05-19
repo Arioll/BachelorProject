@@ -6,7 +6,7 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 from peewee import Model, MySQLDatabase
-from parsers.settings import DATABASE_CONFIG, KEYSUBWORDS_FILTER
+from parsers.settings import DATABASE_CONFIG, KEYSUBWORDS_FILTER, CACHE_SIZE
 from parsers.NER import NER
 import peewee
 import time
@@ -16,8 +16,6 @@ import os
 config = DATABASE_CONFIG
 db = MySQLDatabase(config['dbname'], user=config['user'], passwd=config['password'], host=config['host'], port=config['port'])
 db.connect()
-
-cache_size = 100
 
 class JSONField(peewee.TextField):
     def db_value(self, value):
@@ -71,11 +69,11 @@ class ParsersPipeline:
         print("SAVE RESULTS INTO THE DATABASE")
         results = [i.get_dictionary() for i in self.cache]
 
-        #strings = [i['title'] + ' ' + i['descr'] for i in self.cache]
-        #ner_decomp = self.ner_model.ner_decomposition(strings)
-        #for res, ner in zip(results, ner_decomp):
-        #    res['named_entities'] = ner[0]
-        #    res['appendix'] = ner[1]
+        strings = [i['title'] + ' ' + i['descr'] for i in self.cache]
+        ner_decomp = self.ner_model.ner_decomposition(strings, 5)
+        for res, ner in zip(results, ner_decomp):
+            res['named_entities'] = ner[0]
+            res['appendix'] = ner[1]
 
         with db.atomic():
             Article.insert_many(results).execute(db)
@@ -83,7 +81,7 @@ class ParsersPipeline:
         self.i = 0
 
     def process_item(self, item, spider):
-        if self.i < cache_size:
+        if self.i < CACHE_SIZE:
             if self.filter_by_subwords(item) and item['link'] not in self.parsed_links:
                 self.cache.append(item)
                 self.parsed_links.add(item['link'])
