@@ -12,7 +12,7 @@ class ParsersItem(scrapy.Item):
     # define the fields for your item here like:
     title = scrapy.Field()
     descr = scrapy.Field()
-    local_id = scrapy.Field()
+    #local_id = scrapy.Field()
     provider_name = scrapy.Field()
     link = scrapy.Field()
     pub_date = scrapy.Field()
@@ -22,5 +22,5 @@ class ParsersItem(scrapy.Item):
                 'description': self['descr'],
                 'link': self['link'],
                 'pub_date': self['pub_date'],
-                'provider_name': self['provider_name'],
-                'local_id': self['local_id']}
+                'provider_name': self['provider_name']}
+                #'local_id': self['local_id']}

@@ -50,7 +50,6 @@ class InosmiParser(scrapy.Spider):
             item['descr'] = d2
         item['pub_date'] = response.css('time::attr(datetime)').get()
         item['link'] = response.url
-        item['local_id'] = int(response.url.split('/')[-1].split('.')[0])
         item['provider_name'] = 'Inosmi'
 
         yield item

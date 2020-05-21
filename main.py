@@ -1,91 +1,97 @@
 from PyQt5.QtWidgets import *
-
+from database.connection_provider import ConnectionProvider
+from search_engine.most_similar_finder import SearchEngine
 import sys
 
-"""
 
 class App(QWidget):
 
-    def __init__(self, IBM_analyzer, azure_client):
+    def __init__(self):
         super().__init__()
-        self.IBM_analyzer = IBM_analyzer
-        self.azure_client = azure_client
+        self.conn_provider = ConnectionProvider()
+        self.search_engine = SearchEngine(self.conn_provider, 100)
+        self.title_to_article = dict()
         self.initUI()
 
-    def initialize_label(self,):
-        self.label = QPlainTextEdit()
-        self.label.setReadOnly(True)
-        self.label.setFixedWidth(300)
-        #self.label.setWordWrap(True)
-        return self.label
+    def initialize_new_list(self,):
+        self.new_list = QListWidget(self)
+        for i, new in enumerate(self.conn_provider.get_all_articles().iterator()):
+            self.title_to_article[new.title] = new
+            self.new_list.insertItem(i, new.title)
+        self.new_list.clicked.connect(
+            lambda x: self.display_new_info(
+                self.new_list.currentItem().text()))
+        return self.new_list
 
-    def initialize_textbox(self):
-        self.textbox = QPlainTextEdit()
-        self.textbox.setFixedHeight(350)
-        return self.textbox
+    def display_new_info(self, title):
+        new = self.title_to_article[title]
+        self.title_tb.setPlainText(new.title)
+        #self.class_tb.setPlainText(new.category)
+        #self.sent_tb.setPlainText(new.sentiment)
+        self.ner_tb.setPlainText(', '.join(new.named_entities))
 
-    def initialize_button(self):
-        self.button = QPushButton(text='Analyze')
-        self.button.clicked.connect(self.buttonClicked)
-        return self.button
+    def initialize_info_pannel(self):
+        self.info_pannel = QGridLayout(self)
 
-    def initialize_engine_selection(self):
-        self.ibm_button = QRadioButton("IBM")
-        self.azure_button = QRadioButton("MS Azure")
-        self.ibm_button.setChecked(True)
-        return self.ibm_button, self.azure_button
+        self.info_pannel.addWidget(QLabel('Заголовок новости: '), 0, 0)
+        self.title_tb = QPlainTextEdit()
+        self.title_tb.setReadOnly(True)
+        self.info_pannel.addWidget(self.title_tb, 0, 1)
 
-    def buttonClicked(self):
-        text = self.textbox.toPlainText()
+        self.info_pannel.addWidget(QLabel('Класс новости: '), 1, 0)
+        self.class_tb = QTextEdit()
+        self.class_tb.setFixedHeight(35)
+        self.class_tb.setReadOnly(True)
+        self.info_pannel.addWidget(self.class_tb, 1, 1)
 
-        if self.ibm_button.isChecked():
-            text_type = detect_type(text)
-            if text_type == 'S':
-                self.label.setPlainText('IBM engine is analysing your string')
-                self.label.repaint()
-                result = analyze_string_IBM(text, self.IBM_analyzer)
-            else:
-                self.label.setPlainText('IBM engine is analysing your url')
-                self.label.repaint()
-                result = analyze_url_IBM(text, self.IBM_analyzer)
+        self.info_pannel.addWidget(QLabel('Тональность новости: '), 2, 0)
+        self.sent_tb = QTextEdit()
+        self.sent_tb.setFixedHeight(35)
+        self.sent_tb.setReadOnly(True)
+        self.info_pannel.addWidget(self.sent_tb, 2, 1)
 
-        elif self.azure_button.isChecked():
-            self.label.setPlainText('Azure engine is analysing your string')
-            self.label.repaint()
-            result = analyze_string_azure(text, self.azure_client)
+        self.info_pannel.addWidget(QLabel('Именованные сущности новости: '), 3, 0)
+        self.ner_tb = QPlainTextEdit()
+        self.ner_tb.setReadOnly(True)
+        self.info_pannel.addWidget(self.ner_tb, 3, 1)
 
-        self.label.setPlainText(json.dumps(result, indent=2))
+        self.info_pannel.addWidget(QLabel('Наиболее похожие новости: '), 4, 0)
+        self.search_button = QPushButton(text='Найти')
+        self.search_button.clicked.connect(self.find_most_similar_news)
+        self.info_pannel.addWidget(self.search_button, 4, 1)
+
+        return self.info_pannel
+
+    def initialize_search_result(self):
+        self.search_result = QListWidget(self)
+        self.search_result.clicked.connect(
+            lambda x: self.display_new_info(
+                self.search_result.currentItem().text()))
+        return self.search_result
+
+    def find_most_similar_news(self):
+        new = self.title_to_article[self.new_list.currentItem().text()]
+        most_sim = self.search_engine.find_match(new.global_id)
+        for ident, score in most_sim:
+            self.search_result.insertItem(ident, self.conn_provider.get_article(ident).title)
 
     def initUI(self):
-        self.resize(600,400)
+        self.resize(900,700)
         self.setWindowTitle('Sentiment analyzer application')
 
         grid = QGridLayout(self)
-        grid.addWidget(self.initialize_label(), 0, 0, 1, 1)
-        grid.addWidget(self.initialize_textbox(), 0, 1, 1, 1)
-        grid.addWidget(self.initialize_button(), 1, 1, 1, 1)
-
-        ibm_b, azure_b = self.initialize_engine_selection()
-        layout = QHBoxLayout()
-        layout.addWidget(ibm_b)
-        layout.addWidget(azure_b)
-        grid.addLayout(layout, 1, 0, 1, 1)
+        grid.addWidget(self.initialize_new_list(), 0, 0, 2, 1)
+        grid.addLayout(self.initialize_info_pannel(), 0, 1, 1, 1)
+        grid.addWidget(self.initialize_search_result(), 1, 1, 1, 1)
 
         self.show()
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    application = App(IBM_analyzer, azure_client)
-    sys.exit(app.exec_())
-
-"""
+#if __name__ == '__main__':
+#    app = QApplication(sys.argv)
+#    application = App()
+#    sys.exit(app.exec_())
 
 if __name__ == '__main__':
-    from database.connection_provider import ConnectionProvider
 
-    
-    #for art in provider.get_all_articles():
-    #    print(art.title)
-    #provider.add_article(100, "title", "descr", "link", "provider_name", "1998-11-03 22:22:22")
-    #print(provider.get_article(1).ner_title_map)
-    #provider.add_article("title", "descr", "link", "provider_name", "1998-11-03 22:22:22")
+    conn_provider = ConnectionProvider()
+    conn_provider.build_csv('parsed_articles.csv', '<SEP>')

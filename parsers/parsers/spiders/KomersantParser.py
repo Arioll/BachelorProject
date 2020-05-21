@@ -41,7 +41,6 @@ class KomersantParser(scrapy.Spider):
         item['descr'] = response.css(self.descr_selector).get()
         item['pub_date'] = response.css(self.pub_date_selector).get()
         item['link'] = response.url
-        item['local_id'] = int(response.url.split('/')[-1])
         item['provider_name'] = 'Komersant'
 
         yield item

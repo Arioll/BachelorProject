@@ -7,7 +7,7 @@
 
 from peewee import Model, MySQLDatabase
 from parsers.settings import DATABASE_CONFIG, KEYSUBWORDS_FILTER, CACHE_SIZE
-from parsers.NER import NER
+from parsers.algorithms.NER import NER
 import peewee
 import time
 import json
@@ -34,9 +34,8 @@ class Article(Model):
     link = peewee.CharField()
     pub_date = peewee.DateTimeField()
 
-    # Used to identificate new in provider
     provider_name = peewee.CharField()
-    local_id = peewee.CharField()
+    #local_id = peewee.CharField()
 
     # Used in search engine
     named_entities = JSONField(null=True)
@@ -44,7 +43,6 @@ class Article(Model):
 
     class Meta:
         database = db
-
 
 
 class ParsersPipeline:
@@ -55,13 +53,13 @@ class ParsersPipeline:
         self.parsed_links = set()
         for art in Article.select().iterator():
             self.parsed_links.add(art.link)
-        self.ner_model = NER()
+        #self.ner_model = NER()
 
     def filter_by_subwords(self, item):
         str_arr = (item['title'] + ' ' + item['descr']).lower().split(' ')
         for s in str_arr:
             for sw in KEYSUBWORDS_FILTER:
-                if sw in s:
+                if sw.lower() in s:
                     return True
         return False
 
@@ -69,11 +67,11 @@ class ParsersPipeline:
         print("SAVE RESULTS INTO THE DATABASE")
         results = [i.get_dictionary() for i in self.cache]
 
-        strings = [i['title'] + ' ' + i['descr'] for i in self.cache]
-        ner_decomp = self.ner_model.ner_decomposition(strings, 5)
-        for res, ner in zip(results, ner_decomp):
-            res['named_entities'] = ner[0]
-            res['appendix'] = ner[1]
+        #strings = [i['title'] + ' ' + i['descr'] for i in self.cache]
+        #ner_decomp = self.ner_model.ner_decomposition(strings, 5)
+        #for res, ner in zip(results, ner_decomp):
+        #    res['named_entities'] = ner[0]
+        #    res['appendix'] = ner[1]
 
         with db.atomic():
             Article.insert_many(results).execute(db)

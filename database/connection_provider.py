@@ -3,6 +3,7 @@ import pandas as pd
 import string
 import json
 import os
+import re
 
 from peewee import Model, MySQLDatabase
 #from common.article import ArticleModel
@@ -40,7 +41,7 @@ class Article(Model):
 
     # Used to identificate new in provider
     provider_name = peewee.TextField()
-    local_id = peewee.TextField()
+    #local_id = peewee.TextField()
 
     # Used in search engine
     named_entities = JSONField(null=True)
@@ -89,16 +90,20 @@ class ConnectionProvider:
     def get_articles_by_id_and_provider_name(self, local_id, provider_name):
         return Article.select().where(Article.provider_name == provider_name & Article.local_id == local_id)
 
+    def _preprocess_str(self, s):
+        s = re.sub(f'[{string.whitespace}]', ' ', s.strip()) 
+        return re.sub(' +', ' ', s)
+
     def build_csv(self, path, sep=';'):
         fields_names = ['global_id', 'title', 'description', 'link', 
-                        'pub_date', 'provider_name', 'local_id', 
+                        'pub_date', 'provider_name', 
                         'named_entities', 'appendix']
         lines = [sep.join(fields_names)]
         for art in Article.select().iterator():
             art_arr = [art.global_id, art.title, art.description, art.link, 
-                       art.pub_date, art.provider_name, art.local_id, 
+                       art.pub_date, art.provider_name, 
                        art.named_entities, art.appendix]
-            lines.append(sep.join([str(i) for i in art_arr]))
+            lines.append(self._preprocess_str(sep.join([str(i) for i in art_arr])))
         with open(path, 'w') as file:
             file.write('\n'.join(lines))
 
